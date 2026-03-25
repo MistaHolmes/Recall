@@ -63,6 +63,11 @@ pkill -f "python bot.py" || true
 python bot.py &
 ```
 
+Run tests:
+```bash
+venv/bin/python -m pytest tests/ -v --tb=short 2>&1
+```
+
 Basic commands (slash commands)
 ------------------------------
 The following slash commands are available in the test guild once the bot is running:
@@ -96,3 +101,53 @@ See `Documentation/phase-1/phase-1_documentation.md` for a full technical report
 Contact / Next steps
 --------------------
 Open issues or PRs in the repository for feature requests, tests, or deployment packaging (Docker/systemd).
+
+Testing
+-------
+Install pytest (already in venv after first run of the bot):
+
+```bash
+source venv/bin/activate
+pip install pytest pytest-asyncio
+```
+
+Run the full unit test suite:
+
+```bash
+python -m pytest tests/ -v --tb=short
+```
+
+Run a single test module:
+
+```bash
+python -m pytest tests/test_rag_pipeline.py -v
+python -m pytest tests/test_gemini_client.py -v
+python -m pytest tests/test_quiz_engine.py -v
+python -m pytest tests/test_summarizer.py -v
+```
+
+Phase 4 — Voice transcription (Whisper)
+---------------------------------------
+Whisper is installed automatically with requirements. The bot loads the model
+on first `/voicejoin` call and keeps it cached for the process lifetime.
+
+Change the model size in `.env` (tradeoff: accuracy vs. speed vs. memory):
+
+```dotenv
+WHISPER_MODEL=base     # ~74 MB  — fast, good for short utterances
+WHISPER_MODEL=small    # ~244 MB — better accuracy
+WHISPER_MODEL=medium   # ~769 MB — high accuracy, slower on CPU
+```
+
+Phase 5 — Session scheduling
+-----------------------------
+Schedule a future study session reminder (bot sends a ping in the channel at the given time):
+
+```
+/schedule create topic:"Kubernetes HPA" iso_time:"2026-03-26T18:00:00"
+/schedule list
+/schedule cancel job_id:"session_<guild>_<timestamp>"
+```
+
+Times are always UTC. The job fires once and sends an embed reminding the group
+to use `/study start`.

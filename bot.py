@@ -44,6 +44,7 @@ class StudyBot(commands.Bot):
             "cogs.rag",
             "cogs.quiz",
             "cogs.voice",
+            "cogs.schedule",   # Phase 5 — session scheduling
         ]
         for cog in cogs:
             try:
@@ -74,6 +75,15 @@ class StudyBot(commands.Bot):
     async def on_command_error(self, ctx, error):
         log.error(f"Command error: {error}")
 
+    async def close(self):
+        """Override close() to cancel active tasks before disconnecting."""
+        log.info("Shutting down — cancelling active sessions and voice tasks…")
+        for guild_id, session in list(self.active_sessions.items()):
+            task = session.get("pomodoro_task")
+            if task and not task.done():
+                task.cancel()
+        await super().close()
+
 
 async def main():
     config.validate_config()
@@ -81,9 +91,16 @@ async def main():
     try:
         async with bot:
             await bot.start(config.DISCORD_BOT_TOKEN)
+    except KeyboardInterrupt:
+        # Swallow the interrupt — cleanup already handled by bot.close()
+        pass
     finally:
         await close_db()
+        log.info("Bot shut down cleanly.")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass  # silence the top-level traceback on Ctrl+C

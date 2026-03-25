@@ -4,6 +4,7 @@ cogs/admin.py — Admin commands: /upload, /files, /clearfiles
 
 import os
 import io
+import asyncio
 import discord
 import logging
 from discord import app_commands
@@ -37,7 +38,13 @@ class AdminCog(commands.Cog):
             f.write(data)
 
         try:
-            count = ingest_pdf(interaction.guild_id, tmp_path, file.filename)
+            # Run synchronous CPU-bound ingestion in a thread pool so the
+            # asyncio event loop is never blocked (avoids interaction timeouts
+            # on concurrent commands like /study end or /voicejoin).
+            loop = asyncio.get_event_loop()
+            count = await loop.run_in_executor(
+                None, ingest_pdf, interaction.guild_id, tmp_path, file.filename
+            )
         except Exception as e:
             log.error(f"Ingestion error: {e}")
             return await interaction.followup.send(embed=embeds.error(f"Failed to process PDF: {e}"))

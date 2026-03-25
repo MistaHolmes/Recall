@@ -74,7 +74,14 @@ class StudyCog(commands.Cog):
                 ephemeral=True,
             )
 
-        await interaction.response.defer(thinking=True)
+        try:
+            await interaction.response.defer(thinking=True)
+        except discord.NotFound:
+            # Interaction token expired (>3 s elapsed, usually because a
+            # prior synchronous operation blocked the event loop).  The
+            # session teardown should still complete; responses will be
+            # sent via channel.send() as a fallback.
+            log.warning(f"study end: interaction expired for guild {guild_id}, continuing without defer")
         session = self.bot.active_sessions.pop(guild_id)
 
         # Cancel Pomodoro
@@ -109,7 +116,10 @@ class StudyCog(commands.Cog):
                 pass
         await update_streak(interaction.user.id, guild_id)
 
-        await interaction.followup.send(embed=embeds.session_end(session["topic"], duration))
+        try:
+            await interaction.followup.send(embed=embeds.session_end(session["topic"], duration))
+        except (discord.NotFound, discord.HTTPException):
+            await interaction.channel.send(embed=embeds.session_end(session["topic"], duration))
 
         if summary_text and summary_text != "Summary unavailable.":
             await interaction.channel.send(embed=embeds.session_summary(session["topic"], summary_text))
