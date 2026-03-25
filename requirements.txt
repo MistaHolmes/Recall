@@ -1,0 +1,47 @@
+# Core Discord Bot
+discord.py==2.3.2
+python-dotenv==1.0.0
+
+# AI & Machine Learning (FREE MODELS)
+google-generativeai==0.3.2
+sentence-transformers==2.2.2
+chromadb==0.4.18
+openai-whisper==20231117
+
+# Document Processing
+PyPDF2==3.0.1
+langchain==0.1.0
+langchain-community==0.0.10
+
+# Database & Storage
+asyncpg==0.29.0
+sqlite3  # Built into Python
+redis==5.0.1
+
+# Web Framework & API
+fastapi==0.104.1
+uvicorn==0.24.0
+
+# Task Queue & Background Jobs
+celery==5.3.4
+APScheduler==3.10.4
+
+# Audio Processing
+pydub==0.25.1
+numpy==1.24.3
+
+# Utilities
+aiohttp==3.9.1
+asyncio-mqtt==0.16.1
+Pillow==10.1.0
+requests==2.31.0
+
+# Development & Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+black==23.11.0
+flake8==6.1.0
+
+# Optional: Better Performance
+# faster-whisper==0.10.0  # Uncomment for better Whisper performance
+# torch==2.1.1+cpu  # Uncomment if needed for local models
