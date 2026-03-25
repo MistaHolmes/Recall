@@ -1,0 +1,57 @@
+# /etc/systemd/system/discord-bot.service
+#
+# Systemd service unit for the Discord AI Study Bot.
+# Install:
+#   sudo cp discord-bot.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable discord-bot
+#   sudo systemctl start discord-bot
+#
+# Logs:
+#   journalctl -u discord-bot -f
+#   journalctl -u discord-bot --since "1 hour ago"
+
+[Unit]
+Description=Discord AI Study Group Facilitator Bot
+Documentation=https://github.com/YOUR_USERNAME/Discord_bot_AI
+After=network-online.target
+Wants=network-online.target
+# Ensure the bot starts after network is fully up (needed for Discord gateway + Neon DB)
+
+[Service]
+Type=simple
+User=botuser
+Group=botuser
+WorkingDirectory=/opt/discord-bot
+
+# Load environment variables from .env file
+EnvironmentFile=/opt/discord-bot/.env
+
+# Absolute path to the venv Python interpreter
+ExecStart=/opt/discord-bot/venv/bin/python bot.py
+
+# ── Restart policy ─────────────────────────────────────────────────────────────
+Restart=on-failure
+RestartSec=10s
+StartLimitIntervalSec=5min
+StartLimitBurst=5
+
+# ── Resource limits ────────────────────────────────────────────────────────────
+# Whisper base model uses ~800MB RAM; allow generous headroom
+MemoryMax=4G
+CPUQuota=200%   # Allow 2 full cores (out of available 2–4)
+
+# ── Logging ────────────────────────────────────────────────────────────────────
+StandardOutput=append:/var/log/discord-bot/bot.log
+StandardError=append:/var/log/discord-bot/bot-error.log
+SyslogIdentifier=discord-bot
+
+# ── Security hardening ─────────────────────────────────────────────────────────
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/opt/botdata /var/log/discord-bot /opt/discord-bot
+
+[Install]
+WantedBy=multi-user.target

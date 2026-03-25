@@ -1,0 +1,58 @@
+#cloud-config
+# cloud-init.yaml — Runs on first boot of the OCI instance to bootstrap the server.
+# Terraform passes this file via the instance metadata `user_data` field.
+
+package_update: true
+package_upgrade: true
+
+packages:
+  # Build essentials
+  - build-essential
+  - git
+  - curl
+  - wget
+  - unzip
+  # Python build dependencies
+  - python3.11
+  - python3.11-venv
+  - python3.11-dev
+  - python3-pip
+  # Audio dependencies for voice transcription (Whisper + discord voice)
+  - ffmpeg
+  - libopus0
+  - libopus-dev
+  - libffi-dev
+  - libssl-dev
+  # System utilities
+  - htop
+  - nano
+  - ufw
+  - logrotate
+
+runcmd:
+  # ── Firewall (UFW) ───────────────────────────────────────────────────────────
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow ssh
+  - ufw --force enable
+
+  # ── Application user (never run the bot as root) ─────────────────────────────
+  - useradd --system --create-home --shell /bin/bash botuser
+  - usermod -aG ubuntu botuser
+
+  # ── Persistent data directory (mounted from block volume at /dev/sdb) ────────
+  - mkdir -p /opt/botdata/chromadb
+  - mkdir -p /opt/botdata/uploads
+  - chown -R botuser:botuser /opt/botdata
+
+  # ── Application directory ─────────────────────────────────────────────────────
+  - mkdir -p /opt/discord-bot
+  - chown botuser:botuser /opt/discord-bot
+
+  # ── Log directory ─────────────────────────────────────────────────────────────
+  - mkdir -p /var/log/discord-bot
+  - chown botuser:botuser /var/log/discord-bot
+
+final_message: |
+  Cloud-init complete. Server is ready for bot deployment.
+  Run: /opt/discord-bot/scripts/deploy.sh to install the application.

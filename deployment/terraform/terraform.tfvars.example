@@ -1,0 +1,38 @@
+###############################################################################
+# terraform.tfvars.example
+#
+# Copy this file to terraform.tfvars and fill in your values.
+# Never commit terraform.tfvars to version control — it contains secrets.
+#
+#   cp terraform.tfvars.example terraform.tfvars
+###############################################################################
+
+# ── OCI API credentials ───────────────────────────────────────────────────────
+# All OCIDs are found at: OCI Console → top-right profile menu → Tenancy
+# API keys are managed at: OCI Console → Profile → API Keys
+
+tenancy_ocid     = "ocid1.tenancy.oc1..aaaaaaaaXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+user_ocid        = "ocid1.user.oc1..aaaaaaaaXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+fingerprint      = "xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"
+private_key_path = "~/.oci/oci_api_key.pem"
+
+# ── Region & topology ─────────────────────────────────────────────────────────
+# Choose a region where A1.Flex is available on the free tier.
+# Common options: ap-mumbai-1, us-ashburn-1, eu-frankfurt-1, ap-singapore-1
+
+region              = "ap-mumbai-1"
+availability_domain = "aBCD:AP-MUMBAI-1-AD-1"   # See: OCI Console → Compute → Instances → Create
+compartment_ocid    = "ocid1.compartment.oc1..aaaaaaaaXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# ── Instance sizing (Always Free: 4 oCPU + 24 GB across all A1.Flex instances) ─
+instance_ocpus         = 2
+instance_memory_in_gbs = 12
+
+# ── SSH ───────────────────────────────────────────────────────────────────────
+ssh_public_key_path = "~/.ssh/id_ed25519.pub"
+
+# Restrict to your IP for production security:  "YOUR.IP.ADDRESS/32"
+operator_cidr = "0.0.0.0/0"
+
+# ── Tagging ───────────────────────────────────────────────────────────────────
+environment = "production"
