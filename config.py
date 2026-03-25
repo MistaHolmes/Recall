@@ -20,7 +20,10 @@ class Config:
 
     # AI Model Settings
     GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+    GROQ_API_KEY = os.getenv('GROQ_API_KEY')
     HUGGINGFACE_API_TOKEN = os.getenv('HUGGINGFACE_API_TOKEN')
+    LLM_PROVIDER = os.getenv('LLM_PROVIDER', 'groq')   # groq | gemini
+    LLM_MODEL = os.getenv('LLM_MODEL', 'llama-3.3-70b-versatile')
 
     # Database Settings
     DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///study_bot.db')
