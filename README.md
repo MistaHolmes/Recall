@@ -83,6 +83,46 @@ The following slash commands are available in the test guild once the bot is run
 - `/study status` — Show current session status.
 - `/voicejoin` / `/voiceleave` — Join/leave voice capture (WaveSink).
 
+Using commands — recommended order & hierarchy
+---------------------------------------------
+
+How to run a structured study session (recommended):
+
+1. Start the study session:
+
+	- `/study start topic:"Calculus — Integration Techniques"`
+
+2. (Optional) Capture voice during the session:
+
+	- `/voicejoin` — bot joins the voice channel where you are and begins recording.
+	- Speak normally in the voice channel; audio is buffered and transcribed.
+	- `/voiceleave` — manually stop recording and disconnect the bot (bot also flushes audio).
+
+3. End the study session when finished:
+
+	- `/study end` — cancels timers, persists the session, and generates a structured summary
+	  using the recorded transcript + chat log + quiz results.
+
+Notes:
+
+- If you start a `/study` session but do not call `/voicejoin`, transcripts from voice will not be captured.
+- `voicejoin` + `voiceleave` can be used inside an active study session; transcripts will be attached to that session's summary.
+
+Quick flow for a standalone voice meeting (no `/study`):
+
+1. `/voicejoin` — invite the bot into the voice channel to record audio.
+2. Talk in the channel.
+3. `/voiceleave` — when you leave the bot will flush audio and post a concise meeting summary
+	back to the text channel where `/voicejoin` was invoked.
+
+Command precedence and tips
+--------------------------
+
+- Use `/study start` when you want the meeting to be a formal study session — this enables Pomodoro timers and session-level summaries.
+- Use `/voicejoin`/`/voiceleave` for short, ad-hoc recordings or when you want a quick meeting summary without creating a study session.
+- If you need transcripts attached to a persistent session and database records, always pair `/study start` with `/voicejoin` during the session.
+
+
 Developer notes
 ---------------
 - Commands are synced guild-scoped during development to avoid global propagation delays — set `DISCORD_GUILD_ID` in `.env`.

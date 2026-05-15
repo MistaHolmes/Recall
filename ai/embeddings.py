@@ -16,6 +16,16 @@ def _get_model():
     return SentenceTransformer(config.EMBEDDING_MODEL)
 
 
+def preload_model() -> None:
+    """Eagerly load the embedding model (call from a thread at startup).
+
+    The first call to SentenceTransformer() downloads / loads weights and
+    can block for several seconds.  By running this in an executor during
+    setup_hook() the event loop stays responsive for incoming interactions.
+    """
+    _get_model()
+
+
 def embed(texts: list[str]) -> list[list[float]]:
     """Embed a list of strings, return list of float vectors."""
     model = _get_model()

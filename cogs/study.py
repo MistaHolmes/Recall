@@ -27,15 +27,19 @@ class StudyCog(commands.Cog):
     @study_group.command(name="start", description="Start a new study session with Pomodoro timer")
     @app_commands.describe(topic="What are you studying today?")
     async def study_start(self, interaction: discord.Interaction, topic: str):
+        # Defer IMMEDIATELY — Discord invalidates the interaction token after
+        # only 3 s, so nothing must run before this call.
+        try:
+            await interaction.response.defer(thinking=True)
+        except discord.NotFound:
+            log.warning("study start: interaction expired before defer")
+
         guild_id = interaction.guild_id
 
         if guild_id in self.bot.active_sessions:
-            return await interaction.response.send_message(
+            return await interaction.followup.send(
                 embed=embeds.error("A session is already running. Use `/study end` first."),
-                ephemeral=True,
             )
-
-        await interaction.response.defer(thinking=True)
 
         # Register user and create DB session
         from db.database import upsert_user
@@ -54,9 +58,11 @@ class StudyCog(commands.Cog):
             "pomodoro_task": None,
         }
 
-        await interaction.followup.send(
-            embed=embeds.session_start(topic, config.POMODORO_FOCUS_MINS, config.POMODORO_BREAK_MINS)
-        )
+        start_embed = embeds.session_start(topic, config.POMODORO_FOCUS_MINS, config.POMODORO_BREAK_MINS)
+        try:
+            await interaction.followup.send(embed=start_embed)
+        except (discord.NotFound, discord.HTTPException):
+            await interaction.channel.send(embed=start_embed)
 
         # Start Pomodoro loop
         task = asyncio.create_task(self._pomodoro_loop(guild_id, interaction.channel))
@@ -66,27 +72,42 @@ class StudyCog(commands.Cog):
 
     @study_group.command(name="end", description="End the current study session and generate summary")
     async def study_end(self, interaction: discord.Interaction):
-        guild_id = interaction.guild_id
-
-        if guild_id not in self.bot.active_sessions:
-            return await interaction.response.send_message(
-                embed=embeds.error("No active session. Use `/study start` first."),
-                ephemeral=True,
-            )
-
+        # Defer IMMEDIATELY — Discord invalidates the interaction token after
+        # only 3 s, so nothing must run before this call.
         try:
             await interaction.response.defer(thinking=True)
         except discord.NotFound:
-            # Interaction token expired (>3 s elapsed, usually because a
-            # prior synchronous operation blocked the event loop).  The
-            # session teardown should still complete; responses will be
-            # sent via channel.send() as a fallback.
-            log.warning(f"study end: interaction expired for guild {guild_id}, continuing without defer")
-        session = self.bot.active_sessions.pop(guild_id)
+            log.warning(f"study end: interaction expired for guild {interaction.guild_id}, continuing without defer")
+
+        guild_id = interaction.guild_id
+
+        if guild_id not in self.bot.active_sessions:
+            try:
+                await interaction.followup.send(
+                    embed=embeds.error("No active session. Use `/study start` first."),
+                )
+            except (discord.NotFound, discord.HTTPException):
+                await interaction.channel.send(
+                    embed=embeds.error("No active session. Use `/study start` first."),
+                )
+            return
+
+        session = self.bot.active_sessions[guild_id]
 
         # Cancel Pomodoro
         if session["pomodoro_task"]:
             session["pomodoro_task"].cancel()
+
+        # Leave voice channel and flush transcript BEFORE popping session
+        # (leave_voice reads active_sessions to flush the voice transcript)
+        voice_cog = self.bot.cogs.get("VoiceCog")
+        if voice_cog:
+            try:
+                await voice_cog.leave_voice(guild_id)
+            except Exception as e:
+                log.warning(f"Failed to leave voice on session end: {e}")
+
+        self.bot.active_sessions.pop(guild_id, None)
 
         # Calculate duration
         duration = int((datetime.utcnow() - session["started_at"]).total_seconds() / 60)

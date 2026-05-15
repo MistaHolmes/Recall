@@ -2,6 +2,7 @@
 cogs/rag.py — /ask command
 """
 
+import asyncio
 import logging
 import discord
 from discord import app_commands
@@ -25,10 +26,14 @@ class RAGCog(commands.Cog):
     @app_commands.command(name="ask", description="Ask a question about your uploaded course material")
     @app_commands.describe(question="Your question")
     async def ask_command(self, interaction: discord.Interaction, question: str):
-        await interaction.response.defer(thinking=True)
-
         try:
-            rag = query(interaction.guild_id, question)
+            await interaction.response.defer(thinking=True)
+        except discord.NotFound:
+            log.warning(f"ask: interaction expired before defer in guild {interaction.guild_id}")
+
+        loop = asyncio.get_event_loop()
+        try:
+            rag = await loop.run_in_executor(None, query, interaction.guild_id, question)
         except RuntimeError as e:
             return await interaction.followup.send(embed=embeds.error(str(e)))
 
